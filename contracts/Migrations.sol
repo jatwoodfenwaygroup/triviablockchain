@@ -1,23 +1,35 @@
-pragma solidity ^0.4.2;
+pragma solidity ^0.4.17;
 
-contract Migrations {
-  address public owner;
-  uint public last_completed_migration;
-
-  modifier restricted() {
-    if (msg.sender == owner) _;
-  }
-
-  function Migrations() {
-    owner = msg.sender;
-  }
-
-  function setCompleted(uint completed) restricted {
-    last_completed_migration = completed;
-  }
-
-  function upgrade(address new_address) restricted {
-    Migrations upgraded = Migrations(new_address);
-    upgraded.setCompleted(last_completed_migration);
-  }
+contract Lottery{
+    address public manager;
+    address[] public players;
+    
+    constructor() public{
+        manager = msg.sender;
+    }
+    
+    function enter() public payable{
+        require(msg.value > .01 ether);
+        players.push(msg.sender);
+    }
+    
+    function random() private view returns(uint){
+        return uint(keccak256(block.difficulty, now, players));
+    }
+    
+    function pickWinner() public restricted  returns (address) {
+        uint index = random()% players.length;
+        address winner = players[index];
+        winner.transfer(this.balance);
+        players = new address[](0);
+        return winner;
+    }
+    
+    modifier restricted(){
+        require(msg.sender == manager);
+        _;
+    }
+    function getPlayers()public view returns(address[]){
+        return players;
+    }
 }
